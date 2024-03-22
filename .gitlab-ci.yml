@@ -1,0 +1,69 @@
+stages:
+  - test
+  - build
+  - deploy
+
+.baseimage:
+  image:
+    name: atlasamglab/stats-base:root6.24.02-python3.8
+    entrypoint: [""]
+  # see https://docs.gitlab.com/ee/ci/caching/#cache-python-dependencies
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  cache:
+    paths:
+      - .cache/pip
+      - /usr/local/lib/python3.8/site-packages/
+  before_script:
+    - source /usr/local/bin/thisroot.sh
+    # want to set up a virtualenv to cache
+    - python -V
+    - python -m pip install -U pip setuptools wheel
+    - python -m pip install --ignore-installed -U -q -e .[complete]
+    - python -m pip freeze
+    # set up YODA
+    - apt-get --allow-releaseinfo-change update
+    - apt-get install -y git wget
+    - wget -qO- https://yoda.hepforge.org/downloads/?f=YODA-1.9.1.tar.gz | tar -xvz -C /opt
+    - ln -s `which python` /usr/local/bin/python3.8.11
+    - pushd /opt/YODA-1.9.1 && ./configure && make -j2 && make install && popd
+
+tests:
+    extends: .baseimage
+    stage: test
+    script:
+      - pyflakes src/
+      - if [[ -x $(command -v black) ]]; then black --check --diff --verbose src setup.py; fi
+      - python -m pytest
+
+build_package:
+  extends: .baseimage
+  stage: build
+  script:
+    - python -m pip install pep517 --user
+    - python -m pep517.build --source --binary --out-dir dist/ .
+  artifacts:
+    paths:
+      - dist/
+
+build_docs:
+  extends: .baseimage
+  stage: build
+  script:
+    - python -m sphinx docs public
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 hour
+
+pages:
+  stage: deploy
+  needs: ["build_docs"]
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+  script:
+    - echo 'Deploying pages'
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 hour
