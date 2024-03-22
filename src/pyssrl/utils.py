@@ -2,6 +2,7 @@ import re
 import os
 from collections import defaultdict
 
+
 def tokenize(fname, pattern_type=0):
     if pattern_type == 0:
         pattern = 'stats_Run([.\d]+)_(.+)_([.\d]+)(:?V|v)_([.\d]+)(:?keV|KeV|kev)_(.+)_([.\d]+).root'
@@ -12,7 +13,9 @@ def tokenize(fname, pattern_type=0):
     elif pattern_type == 3:
         pattern = 'stats_Run([.\d]+)_(.+)_([.\d]+)(:?V|v)_([0-9]+)(:?keV|KeV|kev).root'
     elif pattern_type == 4:
-        pattern = 'stats_Run([.\d]+)_(.+)_([.\d]+)(:?V|v)_([0-9]+)(:?keV|KeV|kev)_(.+).root'
+        pattern = (
+            'stats_Run([.\d]+)_(.+)_([.\d]+)(:?V|v)_([0-9]+)(:?keV|KeV|kev)_(.+).root'
+        )
     else:
         return None
     c_pattern = re.compile(pattern)
@@ -20,7 +23,7 @@ def tokenize(fname, pattern_type=0):
     tokens = c_pattern.match(fname)
 
     if tokens is None:
-        return tokenize(fname, pattern_type+1)
+        return tokenize(fname, pattern_type + 1)
 
     return tokens
 
@@ -30,13 +33,13 @@ def resolve_filename(files, pattern_type=0):
     # pattern_1 = r"stats_Run([.\d]+)_(.+)_([.\d]+)(:?V|v)_([.\d]+)(:?keV|KeV|kev)_(.+?)(:?[.\d]+)_(:?ch)"
 
     group_map = {
-        "run" : 1,
-        "sensor" : 2,
-        "voltage" : 3,
-        "volt_unit" : 4,
-        "energy" : 5,
-        "energy_unit" : 6,
-        "user_note" : 7,
+        "run": 1,
+        "sensor": 2,
+        "voltage": 3,
+        "volt_unit": 4,
+        "energy": 5,
+        "energy_unit": 6,
+        "user_note": 7,
     }
 
     filesdict = defaultdict(list)
@@ -51,7 +54,7 @@ def resolve_filename(files, pattern_type=0):
         filesdict[run].append(f)
         if run not in infodict:
             temp = {}
-            for k,v in group_map.items():
+            for k, v in group_map.items():
                 try:
                     temp[k] = tokens.group(v)
                 except:

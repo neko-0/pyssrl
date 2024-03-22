@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 
 ne_evaluate = numexpr.evaluate
 
+
 class Graph(HistogramBase):
     def __init__(self, name, x, y, xtitle, ytitle, type, filter_type=None):
         super().__init__(name)
@@ -26,8 +27,8 @@ class Graph(HistogramBase):
         self.limit = 20
         self.counter = 0
         self.type = type
-        self.reach_limit=False
-        self.filter_type=filter_type
+        self.reach_limit = False
+        self.filter_type = filter_type
         self.action_before_fill = None
 
     def __copy__(self):
@@ -62,7 +63,6 @@ class Graph(HistogramBase):
         c_self.ydata = copy.deepcopy(self.ydata, memo)
         return c_self
 
-
     def copy(self, *args, **kwargs):
         return copy.deepcopy(self)
 
@@ -96,10 +96,11 @@ class Graph(HistogramBase):
             self.ydata.append(ak.flatten(ydata).to_numpy())
             self.counter += 1
             return
-        for x, y in zip(xdata,ydata):
+        for x, y in zip(xdata, ydata):
             self.xdata.append(x.to_numpy())
             self.ydata.append(y.to_numpy())
             self.counter += 1
+
 
 class SSRLHisto1D(Histogram):
     def __init__(self, *args, selection=None, **kwargs):
@@ -125,6 +126,7 @@ class SSRLHisto1D(Histogram):
             raise NotImplementedError
             data = func(event, self.selection)
         # super().from_array(data)
+
 
 class AvgGraph(Graph):
 
@@ -224,7 +226,7 @@ class SSRLHistMaker(HistMaker):
                             pbar_events.update(nevent)
                             continue
                     else:
-                        all_mask = None # ak.ones_like(event)
+                        all_mask = None  # ak.ones_like(event)
 
                     pbar_regions = tqdm(
                         p.regions,
@@ -323,9 +325,9 @@ class SSRLHistMaker(HistMaker):
                                 if mask is not None:
                                     xdata = xdata[mask]
                                     ydata = ydata[mask]
-                                # if mask is not None:
-                                #     xdata = xdata[ak.any(mask,axis=1)]
-                                #     ydata = ydata[ak.any(mask,axis=1)]
+                                    # if mask is not None:
+                                    #     xdata = xdata[ak.any(mask,axis=1)]
+                                    #     ydata = ydata[ak.any(mask,axis=1)]
                                     if w is not None:
                                         histw = w[m_mask]
                                 if xdata.ndim != 1:
@@ -339,12 +341,12 @@ class SSRLHistMaker(HistMaker):
                                 xdata = ne_evaluate(xobs, event)
                                 ydata = ne_evaluate(yobs, event)
                                 if mask is not None:
-                                    xdata = xdata[ak.any(mask,axis=1)]
-                                    ydata = ydata[ak.any(mask,axis=1)]
+                                    xdata = xdata[ak.any(mask, axis=1)]
+                                    ydata = ydata[ak.any(mask, axis=1)]
                                 if ak.any(xdata) and ak.any(ydata):
                                     hist.from_array(xdata, ydata)
                                 if hist.reach_limit:
-                                    SSRLHistMaker.early_termination_counter+=1
+                                    SSRLHistMaker.early_termination_counter += 1
                             elif hist.hist_type == "avg-graph":
                                 xobs, yobs = hist.observable
                                 try:
@@ -357,8 +359,8 @@ class SSRLHistMaker(HistMaker):
                                         xdata = xdata[mask]
                                         ydata = ydata[mask]
                                     else:
-                                        xdata = xdata[ak.any(mask,axis=1)]
-                                        ydata = ydata[ak.any(mask,axis=1)]
+                                        xdata = xdata[ak.any(mask, axis=1)]
+                                        ydata = ydata[ak.any(mask, axis=1)]
                                 if ak.any(xdata) and ak.any(ydata):
                                     hist.from_array(xdata, ydata)
                             elif isinstance(hist, SSRLHisto1D):

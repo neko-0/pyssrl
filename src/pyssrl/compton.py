@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-ELECTRON_REST_MASS = 5.11e5 # eV
-ELECTRON_RADIUS_SQ = 0.07941 # barn
-FINE_STRUCTURE_CONSTANT = 1.0/137.0
+ELECTRON_REST_MASS = 5.11e5  # eV
+ELECTRON_RADIUS_SQ = 0.07941  # barn
+FINE_STRUCTURE_CONSTANT = 1.0 / 137.0
+
 
 def klein_nishina(photon_e, angle):
     '''
@@ -12,7 +13,13 @@ def klein_nishina(photon_e, angle):
     epsilon = photon_e / ELECTRON_REST_MASS
     inc_scatt_r = 1 / (1 + epsilon * (1 - np.cos(angle)))
 
-    return 0.5 * ELECTRON_RADIUS_SQ * inc_scatt_r**2 * (inc_scatt_r + 1/inc_scatt_r - np.sin(angle)**2)
+    return (
+        0.5
+        * ELECTRON_RADIUS_SQ
+        * inc_scatt_r**2
+        * (inc_scatt_r + 1 / inc_scatt_r - np.sin(angle) ** 2)
+    )
+
 
 def recoil_electron_energy(photon_e, angle):
     '''
@@ -27,32 +34,59 @@ def recoil_electron_energy(photon_e, angle):
     scattered_e = photon_e * l_ratio
     return photon_e - scattered_e
 
+
 def photoelectric_xsec(photon_e, Z=14):
     """
     This is simplified version
     """
-    coeff = 16.0/2.0 * np.sqrt(2) * np.pi * ELECTRON_RADIUS_SQ * FINE_STRUCTURE_CONSTANT**4
+    coeff = (
+        16.0
+        / 2.0
+        * np.sqrt(2)
+        * np.pi
+        * ELECTRON_RADIUS_SQ
+        * FINE_STRUCTURE_CONSTANT**4
+    )
     k = photon_e / ELECTRON_REST_MASS
     return coeff * (Z**5) / (k**3.5)
+
 
 def compton_xsec(photon_e, Z=14):
     """
     low energy Compton xsec (<100 keV)
     """
     k = photon_e / ELECTRON_REST_MASS
-    coeff = Z * (8.0/3.0) * np.pi * ELECTRON_RADIUS_SQ
-    a = 1.0 / (1.0 + 2 * k)**2
-    return coeff * a * (1 + 2*k + 6/5*k**2 - 0.5*k**3 + 2/7*k**5 + 8/105*k**6 + 4/105*k**7)
+    coeff = Z * (8.0 / 3.0) * np.pi * ELECTRON_RADIUS_SQ
+    a = 1.0 / (1.0 + 2 * k) ** 2
+    return (
+        coeff
+        * a
+        * (
+            1
+            + 2 * k
+            + 6 / 5 * k**2
+            - 0.5 * k**3
+            + 2 / 7 * k**5
+            + 8 / 105 * k**6
+            + 4 / 105 * k**7
+        )
+    )
+
 
 def pair_production_xsec(photon_e, Z=14):
     k = photon_e / ELECTRON_REST_MASS
     # the energy threshold should match the electron and positron rest mass
     if k < 2:
         return 0.0
-    rho = (2*k - 4) / (2 + k + 2*np.sqrt(2*k))
-    coeff = Z**2 * FINE_STRUCTURE_CONSTANT * ELECTRON_RADIUS_SQ * (2*np.pi/3)
+    rho = (2 * k - 4) / (2 + k + 2 * np.sqrt(2 * k))
+    coeff = Z**2 * FINE_STRUCTURE_CONSTANT * ELECTRON_RADIUS_SQ * (2 * np.pi / 3)
     # this is for low energies k < 4
-    return coeff * (1 - 2/k)**3 * (1 + 0.5*rho + 23/40*rho**2 + 11/60*rho**3 + 29/960*rho**4)
+    return (
+        coeff
+        * (1 - 2 / k) ** 3
+        * (1 + 0.5 * rho + 23 / 40 * rho**2 + 11 / 60 * rho**3 + 29 / 960 * rho**4)
+    )
+
 
 def from_photoelectric(photon_e, nevents):
     compton = compton_xsec(photon_e)
@@ -78,6 +112,7 @@ def from_photoelectric(photon_e, nevents):
 
     return tot_evts, compton_evts
 
+
 def _kn_recoil_sampling(photon_e, acceptance_angles=None):
     kappa = photon_e / ELECTRON_REST_MASS
     epsilon_0 = 1.0 / (1.0 + 2.0 * kappa)
@@ -89,17 +124,17 @@ def _kn_recoil_sampling(photon_e, acceptance_angles=None):
     rv_a = np.random.default_rng().uniform(0, 1)
     rv_b = np.random.default_rng().uniform(0, 1)
     rv_c = np.random.default_rng().uniform(0, 1)
-    sign = np.random.choice([-1,1])
+    sign = np.random.choice([-1, 1])
     if rv_a < alpha1_frac:
-        epsilon = np.exp(-np.log(1/epsilon_0) * rv_b)
+        epsilon = np.exp(-np.log(1 / epsilon_0) * rv_b)
     else:
-        epsilon = np.sqrt(epsilon_0**2 + (1 - epsilon_0**2)*rv_b)
+        epsilon = np.sqrt(epsilon_0**2 + (1 - epsilon_0**2) * rv_b)
     t = (1 - epsilon) / (kappa * epsilon)
     sin2_theta = t * (2 - t)
     g = 1 - epsilon * sin2_theta / (1 + epsilon**2)
 
     # angle = sign * np.arcsin(np.sqrt(sin2_theta))
-    angle = sign * np.arccos(1 - ((1 / epsilon) - 1 ) / kappa)
+    angle = sign * np.arccos(1 - ((1 / epsilon) - 1) / kappa)
 
     # if acceptance_angles:
     #     low, high = acceptance_angles
@@ -121,18 +156,22 @@ def _kn_recoil_sampling(photon_e, acceptance_angles=None):
     else:
         return -1, angle
 
-def kn_recoil_sampling(photon_e, N=int(1e4), acceptance_angles=None, include_angles=False):
+
+def kn_recoil_sampling(
+    photon_e, N=int(1e4), acceptance_angles=None, include_angles=False
+):
     recoils = np.empty(N)
     angles = np.empty(N)
     for i in range(N):
         r_e, r_a = _kn_recoil_sampling(photon_e, acceptance_angles)
         recoils[i] = r_e
         angles[i] = r_a
-    mask = (recoils!=-1)
+    mask = recoils != -1
     if include_angles:
         return recoils[mask], angles[mask]
     else:
         return recoils[mask]
+
 
 if __name__ == "__main__":
     # inc_e = 35e3
@@ -176,25 +215,25 @@ if __name__ == "__main__":
     def draw_energy_angles():
         inc_e_list = [70e3, 35e3, 30e3, 25e3, 10e3]
         # solid_angles = None
-        solid_angles = (1.021-0.066, 1.021+0.066)
+        solid_angles = (1.021 - 0.066, 1.021 + 0.066)
 
         fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 
         for inc_e in inc_e_list:
             energies, angles = kn_recoil_sampling(
-                inc_e, include_angles=True,acceptance_angles=solid_angles
+                inc_e, include_angles=True, acceptance_angles=solid_angles
             )
-            ax.scatter(angles, energies/1e3, label=f"Inc. E={int(inc_e/1e3)}keV")
+            ax.scatter(angles, energies / 1e3, label=f"Inc. E={int(inc_e/1e3)}keV")
 
         ax.set_rticks([1, 2, 3, 4, 5])
         ax.grid(True)
         plt.legend()
         plt.show()
-    
+
     def draw_xsec_angles():
         fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
         inc_e_list = [10e6, 70e3, 35e3, 30e3, 25e3, 10e3]
-        angles = np.arange(0, 2*np.pi, 0.01)
+        angles = np.arange(0, 2 * np.pi, 0.01)
         for inc_e in inc_e_list:
             xsec = klein_nishina(inc_e, angles)
             ax.scatter(angles, xsec, label=f"Inc. E={int(inc_e/1e3)}keV")
@@ -202,14 +241,14 @@ if __name__ == "__main__":
         ax.grid(True)
         plt.legend()
         plt.show()
-    
+
     def draw_recoil_energy_xsec(photon_e):
         fig, ax = plt.subplots()
-        angles = np.arange(0, 2*np.pi, 0.01)
+        angles = np.arange(0, 2 * np.pi, 0.01)
         for pe in photon_e:
             xsec = klein_nishina(pe, angles)
             recoil_e = recoil_electron_energy(pe, angles)
-            ax.plot(recoil_e/1e3, xsec, label=f"{int(pe/1e3)} keV")
+            ax.plot(recoil_e / 1e3, xsec, label=f"{int(pe/1e3)} keV")
         plt.legend()
         plt.show()
 
